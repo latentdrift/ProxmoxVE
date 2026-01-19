@@ -13,11 +13,14 @@ var_disk="${var_disk:-20}"
 var_os="${var_os:-debian}"
 var_version="${var_version:-13}"
 var_unprivileged="${var_unprivileged:-0}"
+var_nesting="${var_nesting:-1}"
 
 header_info "$APP"
 variables
 color
 catch_errors
+
+export GH_ORG GH_PAT RUNNER_NAME RUNNER_LABELS
 
 function update_script() {
   header_info
@@ -31,6 +34,20 @@ function update_script() {
 
   CURRENT_VERSION=$(cat /root/.github-runner 2>/dev/null || echo "0")
   LATEST_VERSION=$(curl -fsSL https://api.github.com/repos/actions/runner/releases/latest | jq -r '.tag_name' | sed 's/v//')
+  if [[ -z "$LATEST_VERSION" || "$LATEST_VERSION" == "null" ]]; then
+    msg_error "Failed to fetch latest runner version"
+    exit
+  fi
+
+  case "$(uname -m)" in
+    x86_64) RUNNER_ARCH="x64" ;;
+    aarch64) RUNNER_ARCH="arm64" ;;
+    armv7l | armv6l) RUNNER_ARCH="arm" ;;
+    *)
+      msg_error "Unsupported architecture: $(uname -m)"
+      exit
+      ;;
+  esac
 
   if [[ "$CURRENT_VERSION" == "$LATEST_VERSION" ]]; then
     msg_ok "GitHub Runner is already at v${LATEST_VERSION}"
@@ -39,16 +56,22 @@ function update_script() {
 
   msg_info "Updating GitHub Runner from v${CURRENT_VERSION} to v${LATEST_VERSION}"
 
-  systemctl stop github-runner
+  SERVICE_NAME=$(cat /opt/actions-runner/.service 2>/dev/null || true)
+  if [[ -n "$SERVICE_NAME" ]]; then
+    systemctl stop "$SERVICE_NAME" || true
+  else
+    systemctl stop github-runner || true
+  fi
 
   cp /opt/actions-runner/.runner /tmp/.runner.bak 2>/dev/null || true
   cp /opt/actions-runner/.credentials /tmp/.credentials.bak 2>/dev/null || true
   cp /opt/actions-runner/.credentials_rsaparams /tmp/.credentials_rsaparams.bak 2>/dev/null || true
 
   cd /opt/actions-runner
-  curl -fsSL -o runner.tar.gz "https://github.com/actions/runner/releases/download/v${LATEST_VERSION}/actions-runner-linux-x64-${LATEST_VERSION}.tar.gz"
+  curl -fsSL -o runner.tar.gz "https://github.com/actions/runner/releases/download/v${LATEST_VERSION}/actions-runner-linux-${RUNNER_ARCH}-${LATEST_VERSION}.tar.gz"
   tar xzf runner.tar.gz
   rm runner.tar.gz
+  $STD ./bin/installdependencies.sh
 
   cp /tmp/.runner.bak /opt/actions-runner/.runner 2>/dev/null || true
   cp /tmp/.credentials.bak /opt/actions-runner/.credentials 2>/dev/null || true
@@ -58,7 +81,11 @@ function update_script() {
 
   echo "${LATEST_VERSION}" >/root/.github-runner
 
-  systemctl start github-runner
+  if [[ -n "$SERVICE_NAME" ]]; then
+    systemctl start "$SERVICE_NAME" || true
+  else
+    systemctl start github-runner || true
+  fi
 
   msg_ok "Updated GitHub Runner to v${LATEST_VERSION}"
   exit
