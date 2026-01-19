@@ -1,0 +1,48 @@
+{
+  "name": "GitHub Runner",
+  "slug": "github-runner",
+  "categories": [
+    20
+  ],
+  "date_created": "2026-01-19",
+  "type": "ct",
+  "updateable": true,
+  "privileged": true,
+  "interface_port": null,
+  "documentation": "https://docs.github.com/en/actions/hosting-your-own-runners",
+  "website": "https://github.com/actions/runner",
+  "logo": "https://cdn.jsdelivr.net/gh/selfhst/icons@main/webp/github.webp",
+  "config_path": "/opt/actions-runner/.env",
+  "description": "Self-hosted GitHub Actions runner with Docker, Node.js, Python, Go, Rust, and Claude Code pre-installed. Enables running GitHub Actions workflows on your own infrastructure with full control over the environment and toolchain.",
+  "install_methods": [
+    {
+      "type": "default",
+      "script": "ct/github-runner.sh",
+      "resources": {
+        "cpu": 4,
+        "ram": 4096,
+        "hdd": 20,
+        "os": "debian",
+        "version": "13"
+      }
+    }
+  ],
+  "default_credentials": {
+    "username": null,
+    "password": null
+  },
+  "notes": [
+    {
+      "text": "Requires a GitHub Personal Access Token (PAT) with admin:org scope for organization-level runner registration.",
+      "type": "warning"
+    },
+    {
+      "text": "Runner will appear in your GitHub organization settings under Actions > Runners after installation.",
+      "type": "info"
+    },
+    {
+      "text": "Includes Docker, Node.js 22, Python 3.12, Go, Rust, and Claude Code pre-installed.",
+      "type": "info"
+    }
+  ]
+}
