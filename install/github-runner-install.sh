@@ -83,6 +83,13 @@ case "$(uname -m)" in
     ;;
 esac
 
+if [[ -z "${GH_ORG:-}" || -z "${GH_PAT:-}" ]]; then
+  if [[ ! -t 0 ]]; then
+    msg_error "No TTY available for prompts. Set GH_ORG and GH_PAT env vars and rerun."
+    exit 1
+  fi
+fi
+
 if [[ -z "${GH_ORG:-}" ]]; then
   while true; do
     read -r -p "${TAB3}Enter GitHub Organization name: " GH_ORG
