@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
+CS_REPO="${CS_REPO:-community-scripts/ProxmoxVE}"
+CS_REPO_BRANCH="${CS_REPO_BRANCH:-main}"
+CS_REPO_URL="${CS_REPO_URL:-https://raw.githubusercontent.com/${CS_REPO}/${CS_REPO_BRANCH}}"
+export CS_REPO CS_REPO_BRANCH CS_REPO_URL
+source <(curl -fsSL "${CS_REPO_URL}/misc/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
 # Author: n8
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE

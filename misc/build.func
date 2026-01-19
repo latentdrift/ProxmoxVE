@@ -26,6 +26,8 @@
 # SECTION 1: INITIALIZATION & CORE VARIABLES
 # ==============================================================================
 
+CS_REPO_URL="${CS_REPO_URL:-https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main}"
+
 # ------------------------------------------------------------------------------
 # variables()
 #
@@ -80,16 +82,16 @@ variables() {
   fi
 }
 
-source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/api.func)
+source <(curl -fsSL "${CS_REPO_URL}/misc/api.func")
 
 if command -v curl >/dev/null 2>&1; then
-  source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/core.func)
-  source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/error_handler.func)
+  source <(curl -fsSL "${CS_REPO_URL}/misc/core.func")
+  source <(curl -fsSL "${CS_REPO_URL}/misc/error_handler.func")
   load_functions
   catch_errors
 elif command -v wget >/dev/null 2>&1; then
-  source <(wget -qO- https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/core.func)
-  source <(wget -qO- https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/error_handler.func)
+  source <(wget -qO- "${CS_REPO_URL}/misc/core.func")
+  source <(wget -qO- "${CS_REPO_URL}/misc/error_handler.func")
   load_functions
   catch_errors
 fi
@@ -2793,7 +2795,7 @@ configure_ssh_settings() {
 # - Otherwise: shows update/setting menu and runs update_script with cleanup
 # ------------------------------------------------------------------------------
 start() {
-  source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/tools.func)
+  source <(curl -fsSL "${CS_REPO_URL}/misc/tools.func")
   if command -v pveversion >/dev/null 2>&1; then
     install_script || return 0
     return 0
@@ -2921,9 +2923,9 @@ build_container() {
   TEMP_DIR=$(mktemp -d)
   pushd "$TEMP_DIR" >/dev/null
   if [ "$var_os" == "alpine" ]; then
-    export FUNCTIONS_FILE_PATH="$(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/alpine-install.func)"
+    export FUNCTIONS_FILE_PATH="$(curl -fsSL "${CS_REPO_URL}/misc/alpine-install.func")"
   else
-    export FUNCTIONS_FILE_PATH="$(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/install.func)"
+    export FUNCTIONS_FILE_PATH="$(curl -fsSL "${CS_REPO_URL}/misc/install.func")"
   fi
 
   # Core exports for install.func
@@ -3392,12 +3394,18 @@ EOF'
   # Install SSH keys
   install_ssh_keys_into_ct
 
+  if ! curl -fsSL "${CS_REPO_URL}/install/${var_install}.sh" >/dev/null; then
+    msg_error "Install script not found: ${CS_REPO_URL}/install/${var_install}.sh"
+    msg_error "Set CS_REPO or CS_REPO_URL to your fork and rerun."
+    exit 1
+  fi
+
   # Run application installer
   # Disable error trap - container errors are handled internally via flag file
   set +Eeuo pipefail # Disable ALL error handling temporarily
   trap - ERR         # Remove ERR trap completely
 
-  lxc-attach -n "$CTID" -- bash -c "$(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/install/${var_install}.sh)"
+  lxc-attach -n "$CTID" -- bash -c "$(curl -fsSL "${CS_REPO_URL}/install/${var_install}.sh")"
   local lxc_exit=$?
 
   set -Eeuo pipefail       # Re-enable error handling
@@ -3481,7 +3489,7 @@ EOF'
         if [[ "${DEV_MODE_MOTD:-false}" == "true" ]]; then
           echo -e "${TAB}${HOLD}${DGN}Setting up MOTD and SSH for debugging...${CL}"
           if pct exec "$CTID" -- bash -c "
-            source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/install.func)
+            source <(curl -fsSL "${CS_REPO_URL}/misc/install.func")
             declare -f motd_ssh >/dev/null 2>&1 && motd_ssh || true
           " >/dev/null 2>&1; then
             local ct_ip=$(pct exec "$CTID" ip a s dev eth0 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1)
