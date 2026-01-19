@@ -3405,7 +3405,21 @@ EOF'
   set +Eeuo pipefail # Disable ALL error handling temporarily
   trap - ERR         # Remove ERR trap completely
 
-  lxc-attach -n "$CTID" -- bash -c "$(curl -fsSL "${CS_REPO_URL}/install/${var_install}.sh")"
+  if [[ -n "${INSTALL_ENV_VARS:-}" ]]; then
+    ENV_KV=()
+    for var in ${INSTALL_ENV_VARS}; do
+      if [[ -n "${!var-}" ]]; then
+        ENV_KV+=("$var=${!var}")
+      fi
+    done
+    if [[ ${#ENV_KV[@]} -gt 0 ]]; then
+      lxc-attach -n "$CTID" -- env "${ENV_KV[@]}" bash -c "$(curl -fsSL "${CS_REPO_URL}/install/${var_install}.sh")"
+    else
+      lxc-attach -n "$CTID" -- bash -c "$(curl -fsSL "${CS_REPO_URL}/install/${var_install}.sh")"
+    fi
+  else
+    lxc-attach -n "$CTID" -- bash -c "$(curl -fsSL "${CS_REPO_URL}/install/${var_install}.sh")"
+  fi
   local lxc_exit=$?
 
   set -Eeuo pipefail       # Re-enable error handling

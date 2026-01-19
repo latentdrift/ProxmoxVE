@@ -25,6 +25,7 @@ color
 catch_errors
 
 export GH_ORG GH_PAT RUNNER_NAME RUNNER_LABELS
+export INSTALL_ENV_VARS="CS_REPO_URL GH_ORG GH_PAT RUNNER_NAME RUNNER_LABELS"
 
 function update_script() {
   header_info
